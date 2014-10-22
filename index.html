@@ -1,0 +1,420 @@
+<!doctype html>
+<head>
+<link rel="stylesheet" href="css/yolo.css" />
+<script src="js/webgl-debug.js"></script>
+<script src="js/engine.js"></script>
+</head>
+<body>
+<canvas id="canvas1" width="640" height="640"></canvas>
+<div style="position: fixed; right: 20px; top: 100px;">
+  <div align="left">Sphere One X:</div>
+  <div align="right"><input type="text" id="s1x"/></div>
+  <div align="left">Sphere One Y:</div>
+  <div align="right"><input type="text" id="s1y"/></div>
+  <div align="left">Sphere Two X:</div>
+  <div align="right"><input type="text" id="s2x"/></div>
+  <div align="left">Sphere Two Y:</div>
+  <div align="right"><input type="text" id="s2y"/></div>
+</div>
+<script>
+var s1x_input = document.getElementById('s1x'),
+    s1y_input = document.getElementById('s1y'),
+    s2x_input = document.getElementById('s2x'),
+    s2y_input = document.getElementById('s2y');
+
+s1x_input.value = "0.5"
+s1y_input.value = "1.0"
+s2x_input.value = "-1.0"
+s2y_input.value = "1.0"
+
+var s1x = "0.0", s1y = "0.0", s2x = "0.0", s2y = "0.0";
+
+
+
+function changeS1y() {
+  freq_input.value = 80; 
+
+}
+
+function changeS2x() {
+  amp_input.value = 0.3; 
+
+}
+</script>
+
+<script>
+
+// THE VERTEX SHADER RUNS ONCE PER TRIANGLE VERTEX.
+
+var vertexShader = [
+,'    attribute vec3 a_pos;'
+,'    varying   vec3 v_pos;'
+,'    void main() {'
+,'        gl_Position = vec4(a_pos, 1.0);'
+,'        v_pos = a_pos;'
+,'    }'
+].join('\n\ ');
+
+var fragmentShader = [
+,'    precision mediump float;'
+,'    uniform vec3  u_mouse;'
+,'    varying vec3  v_pos;'
+,'    '
+,'    vec4 create_sphere(float x, float y, float z, float r){'
+,'        return vec4(x,y,z,r);'
+,'    }'
+,'    float calc_dist(vec4 V, vec4 sphere, vec4 screen_pixel) {'
+,'        vec4 D = screen_pixel - V;' // Direction
+,'        vec4 W = normalize(D);'             // Unit direction
+,'        vec4 C = vec4(sphere.x, sphere.y, sphere.z, 1.0);'
+,'        float r = sphere.w;'
+,'        float e_B = dot((V-C), W);'
+,'        float e_C = dot((V-C), (V-C))-r*r;'
+,'        if (e_B*e_B - e_C < 0.) { return 10000.0; };'
+,'        float t = e_B - sqrt(e_B*e_B - e_C);'
+,'        vec4 hit_point = V + t*W;'
+,'        float dist = distance(V, hit_point);'
+,'        return dist;'
+,'    }'
+,'    '
+,'    vec4 calc_coloring(float distance, vec3 color, float base_dist, float r) {'
+,'        if (distance == 10000.0) { return vec4(0., 0., 0., 1.);}'
+,'        return vec4(color, (base_dist-distance))/r;'
+,'    }'
+,'    vec4 sphere1 = create_sphere('+s1x+', '+s1y+', -5., 2.);'
+,'    vec4 sphere2 = create_sphere('+s2x+', '+s2y+', -11., 5.);'
+,'    float fl = 2.0;'
+,'    vec4 background_color = vec4(0., 0.0, 0.0, 1.0);'
+,'    '
+,'    '
+,'    void main() {'
+,'        float x = v_pos.x;'
+,'        float y = v_pos.y;'
+,'        vec4 ray_origin = vec4(u_mouse.x/2., u_mouse.y/2., fl, 1.);'
+,'        float base_dist_1 = calc_dist(ray_origin, sphere1, vec4(sphere1.x, sphere1.y, sphere1.z, 1.0));'
+,'        float base_dist_2 = calc_dist(ray_origin, sphere2, vec4(sphere2.x, sphere2.y, sphere2.z, 1.0));'
+,'    '
+,'    '
+,'    '
+,'        float dist_1 = calc_dist(ray_origin, sphere1, vec4(x, y, 0., 1.0));'
+,'        float dist_2 = calc_dist(ray_origin, sphere2, vec4(x, y, 0., 1.0));'
+,'        vec4 coloring;'
+,'    '
+,'    '
+,'        if (dist_1 < dist_2) {'
+,'            coloring = calc_coloring(dist_1, vec3(1.0, 0., 0.), base_dist_1, sphere1.w);'
+,'        }'
+,'        '
+,'        if (dist_1 > dist_2) {'
+,'            coloring = calc_coloring(dist_2, vec3(0., 1.0, 0.), base_dist_2, sphere2.w);'
+,'        }'
+,'        if (dist_1 == dist_2) {'
+,'            if (dist_1 == 10000.0) {'
+,'                coloring = background_color;'
+,'            }'
+,'            else { '   
+,'                coloring = calc_coloring(dist_2, vec3(0., 1.0, 0.), base_dist_2, sphere2.w);'
+,'            }'
+,'        }'
+,'        '
+,'        gl_FragColor = coloring;'
+,'    }'
+].join('\n\ ');
+
+// START GL PROGRAM
+
+start_gl("canvas1", vertexShader, fragmentShader);
+
+function changeS1x(e) {
+  // console.log(speed_input.value);
+  var tmp = e.target.value;
+  s1x = tmp+"";
+  var fragmentShader = [
+,'    precision mediump float;'
+,'    uniform vec3  u_mouse;'
+,'    varying vec3  v_pos;'
+,'    '
+,'    vec4 create_sphere(float x, float y, float z, float r){'
+,'        return vec4(x,y,z,r);'
+,'    }'
+,'    float calc_dist(vec4 V, vec4 sphere, vec4 screen_pixel) {'
+,'        vec4 D = screen_pixel - V;' // Direction
+,'        vec4 W = normalize(D);'             // Unit direction
+,'        vec4 C = vec4(sphere.x, sphere.y, sphere.z, 1.0);'
+,'        float r = sphere.w;'
+,'        float e_B = dot((V-C), W);'
+,'        float e_C = dot((V-C), (V-C))-r*r;'
+,'        if (e_B*e_B - e_C < 0.) { return 10000.0; };'
+,'        float t = e_B - sqrt(e_B*e_B - e_C);'
+,'        vec4 hit_point = V + t*W;'
+,'        float dist = distance(V, hit_point);'
+,'        return dist;'
+,'    }'
+,'    '
+,'    vec4 calc_coloring(float distance, vec3 color, float base_dist, float r) {'
+,'        if (distance == 10000.0) { return vec4(0., 0., 0., 1.);}'
+,'        return vec4(color, (base_dist-distance))/r;'
+,'    }'
+,'    vec4 sphere1 = create_sphere('+s1x+', '+s1y+', -5., 2.);'
+,'    vec4 sphere2 = create_sphere('+s2x+', '+s2y+', -11., 5.);'
+,'    float fl = 2.0;'
+,'    vec4 background_color = vec4(0., 0.0, 0.0, 1.0);'
+,'    '
+,'    '
+,'    void main() {'
+,'        float x = v_pos.x;'
+,'        float y = v_pos.y;'
+,'        vec4 ray_origin = vec4(u_mouse.x/2., u_mouse.y/2., fl, 1.);'
+,'        float base_dist_1 = calc_dist(ray_origin, sphere1, vec4(sphere1.x, sphere1.y, sphere1.z, 1.0));'
+,'        float base_dist_2 = calc_dist(ray_origin, sphere2, vec4(sphere2.x, sphere2.y, sphere2.z, 1.0));'
+,'    '
+,'    '
+,'    '
+,'        float dist_1 = calc_dist(ray_origin, sphere1, vec4(x, y, 0., 1.0));'
+,'        float dist_2 = calc_dist(ray_origin, sphere2, vec4(x, y, 0., 1.0));'
+,'        vec4 coloring;'
+,'    '
+,'    '
+,'        if (dist_1 < dist_2) {'
+,'            coloring = calc_coloring(dist_1, vec3(1.0, 0., 0.), base_dist_1, sphere1.w);'
+,'        }'
+,'        '
+,'        if (dist_1 > dist_2) {'
+,'            coloring = calc_coloring(dist_2, vec3(0., 1.0, 0.), base_dist_2, sphere2.w);'
+,'        }'
+,'        if (dist_1 == dist_2) {'
+,'            if (dist_1 == 10000.0) {'
+,'                coloring = background_color;'
+,'            }'
+,'            else { '   
+,'                coloring = calc_coloring(dist_2, vec3(0., 1.0, 0.), base_dist_2, sphere2.w);'
+,'            }'
+,'        }'
+,'        '
+,'        gl_FragColor = coloring;'
+,'    }'
+].join('\n\ ');
+  start_gl("canvas1", vertexShader, fragmentShader);
+}
+
+function changeS1y(e) {
+  // console.log(speed_input.value);
+  var tmp = e.target.value;
+  s1y = tmp+"";
+  var fragmentShader = [
+,'    precision mediump float;'
+,'    uniform vec3  u_mouse;'
+,'    varying vec3  v_pos;'
+,'    '
+,'    vec4 create_sphere(float x, float y, float z, float r){'
+,'        return vec4(x,y,z,r);'
+,'    }'
+,'    float calc_dist(vec4 V, vec4 sphere, vec4 screen_pixel) {'
+,'        vec4 D = screen_pixel - V;' // Direction
+,'        vec4 W = normalize(D);'             // Unit direction
+,'        vec4 C = vec4(sphere.x, sphere.y, sphere.z, 1.0);'
+,'        float r = sphere.w;'
+,'        float e_B = dot((V-C), W);'
+,'        float e_C = dot((V-C), (V-C))-r*r;'
+,'        if (e_B*e_B - e_C < 0.) { return 10000.0; };'
+,'        float t = e_B - sqrt(e_B*e_B - e_C);'
+,'        vec4 hit_point = V + t*W;'
+,'        float dist = distance(V, hit_point);'
+,'        return dist;'
+,'    }'
+,'    '
+,'    vec4 calc_coloring(float distance, vec3 color, float base_dist, float r) {'
+,'        if (distance == 10000.0) { return vec4(0., 0., 0., 1.);}'
+,'        return vec4(color, (base_dist-distance))/r;'
+,'    }'
+,'    vec4 sphere1 = create_sphere('+s1x+', '+s1y+', -5., 2.);'
+,'    vec4 sphere2 = create_sphere('+s2x+', '+s2y+', -11., 5.);'
+,'    float fl = 2.0;'
+,'    vec4 background_color = vec4(0., 0.0, 0.0, 1.0);'
+,'    '
+,'    '
+,'    void main() {'
+,'        float x = v_pos.x;'
+,'        float y = v_pos.y;'
+,'        vec4 ray_origin = vec4(u_mouse.x/2., u_mouse.y/2., fl, 1.);'
+,'        float base_dist_1 = calc_dist(ray_origin, sphere1, vec4(sphere1.x, sphere1.y, sphere1.z, 1.0));'
+,'        float base_dist_2 = calc_dist(ray_origin, sphere2, vec4(sphere2.x, sphere2.y, sphere2.z, 1.0));'
+,'    '
+,'    '
+,'    '
+,'        float dist_1 = calc_dist(ray_origin, sphere1, vec4(x, y, 0., 1.0));'
+,'        float dist_2 = calc_dist(ray_origin, sphere2, vec4(x, y, 0., 1.0));'
+,'        vec4 coloring;'
+,'    '
+,'    '
+,'        if (dist_1 < dist_2) {'
+,'            coloring = calc_coloring(dist_1, vec3(1.0, 0., 0.), base_dist_1, sphere1.w);'
+,'        }'
+,'        '
+,'        if (dist_1 > dist_2) {'
+,'            coloring = calc_coloring(dist_2, vec3(0., 1.0, 0.), base_dist_2, sphere2.w);'
+,'        }'
+,'        if (dist_1 == dist_2) {'
+,'            if (dist_1 == 10000.0) {'
+,'                coloring = background_color;'
+,'            }'
+,'            else { '   
+,'                coloring = calc_coloring(dist_2, vec3(0., 1.0, 0.), base_dist_2, sphere2.w);'
+,'            }'
+,'        }'
+,'        '
+,'        gl_FragColor = coloring;'
+,'    }'
+].join('\n\ ');
+  start_gl("canvas1", vertexShader, fragmentShader);
+}
+
+function changeS2x(e) {
+  // console.log(speed_input.value);
+  var tmp = e.target.value;
+  s2x = tmp+"";
+  var fragmentShader = [
+,'    precision mediump float;'
+,'    uniform vec3  u_mouse;'
+,'    varying vec3  v_pos;'
+,'    '
+,'    vec4 create_sphere(float x, float y, float z, float r){'
+,'        return vec4(x,y,z,r);'
+,'    }'
+,'    float calc_dist(vec4 V, vec4 sphere, vec4 screen_pixel) {'
+,'        vec4 D = screen_pixel - V;' // Direction
+,'        vec4 W = normalize(D);'             // Unit direction
+,'        vec4 C = vec4(sphere.x, sphere.y, sphere.z, 1.0);'
+,'        float r = sphere.w;'
+,'        float e_B = dot((V-C), W);'
+,'        float e_C = dot((V-C), (V-C))-r*r;'
+,'        if (e_B*e_B - e_C < 0.) { return 10000.0; };'
+,'        float t = e_B - sqrt(e_B*e_B - e_C);'
+,'        vec4 hit_point = V + t*W;'
+,'        float dist = distance(V, hit_point);'
+,'        return dist;'
+,'    }'
+,'    '
+,'    vec4 calc_coloring(float distance, vec3 color, float base_dist, float r) {'
+,'        if (distance == 10000.0) { return vec4(0., 0., 0., 1.);}'
+,'        return vec4(color, (base_dist-distance))/r;'
+,'    }'
+,'    vec4 sphere1 = create_sphere('+s1x+', '+s1y+', -5., 2.);'
+,'    vec4 sphere2 = create_sphere('+s2x+', '+s2y+', -11., 5.);'
+,'    float fl = 2.0;'
+,'    vec4 background_color = vec4(0., 0.0, 0.0, 1.0);'
+,'    '
+,'    '
+,'    void main() {'
+,'        float x = v_pos.x;'
+,'        float y = v_pos.y;'
+,'        vec4 ray_origin = vec4(u_mouse.x/2., u_mouse.y/2., fl, 1.);'
+,'        float base_dist_1 = calc_dist(ray_origin, sphere1, vec4(sphere1.x, sphere1.y, sphere1.z, 1.0));'
+,'        float base_dist_2 = calc_dist(ray_origin, sphere2, vec4(sphere2.x, sphere2.y, sphere2.z, 1.0));'
+,'    '
+,'    '
+,'    '
+,'        float dist_1 = calc_dist(ray_origin, sphere1, vec4(x, y, 0., 1.0));'
+,'        float dist_2 = calc_dist(ray_origin, sphere2, vec4(x, y, 0., 1.0));'
+,'        vec4 coloring;'
+,'    '
+,'    '
+,'        if (dist_1 < dist_2) {'
+,'            coloring = calc_coloring(dist_1, vec3(1.0, 0., 0.), base_dist_1, sphere1.w);'
+,'        }'
+,'        '
+,'        if (dist_1 > dist_2) {'
+,'            coloring = calc_coloring(dist_2, vec3(0., 1.0, 0.), base_dist_2, sphere2.w);'
+,'        }'
+,'        if (dist_1 == dist_2) {'
+,'            if (dist_1 == 10000.0) {'
+,'                coloring = background_color;'
+,'            }'
+,'            else { '   
+,'                coloring = calc_coloring(dist_2, vec3(0., 1.0, 0.), base_dist_2, sphere2.w);'
+,'            }'
+,'        }'
+,'        '
+,'        gl_FragColor = coloring;'
+,'    }'
+].join('\n\ ');
+  start_gl("canvas1", vertexShader, fragmentShader);
+}
+
+function changeS2y(e) {
+  // console.log(speed_input.value);
+  var tmp = e.target.value;
+  s2y = tmp+"";
+  var fragmentShader = [
+,'    precision mediump float;'
+,'    uniform vec3  u_mouse;'
+,'    varying vec3  v_pos;'
+,'    '
+,'    vec4 create_sphere(float x, float y, float z, float r){'
+,'        return vec4(x,y,z,r);'
+,'    }'
+,'    float calc_dist(vec4 V, vec4 sphere, vec4 screen_pixel) {'
+,'        vec4 D = screen_pixel - V;' // Direction
+,'        vec4 W = normalize(D);'             // Unit direction
+,'        vec4 C = vec4(sphere.x, sphere.y, sphere.z, 1.0);'
+,'        float r = sphere.w;'
+,'        float e_B = dot((V-C), W);'
+,'        float e_C = dot((V-C), (V-C))-r*r;'
+,'        if (e_B*e_B - e_C < 0.) { return 10000.0; };'
+,'        float t = e_B - sqrt(e_B*e_B - e_C);'
+,'        vec4 hit_point = V + t*W;'
+,'        float dist = distance(V, hit_point);'
+,'        return dist;'
+,'    }'
+,'    '
+,'    vec4 calc_coloring(float distance, vec3 color, float base_dist, float r) {'
+,'        if (distance == 10000.0) { return vec4(0., 0., 0., 1.);}'
+,'        return vec4(color, (base_dist-distance))/r;'
+,'    }'
+,'    vec4 sphere1 = create_sphere('+s1x+', '+s1y+', -5., 2.);'
+,'    vec4 sphere2 = create_sphere('+s2x+', '+s2y+', -11., 5.);'
+,'    float fl = 2.0;'
+,'    vec4 background_color = vec4(0., 0.0, 0.0, 1.0);'
+,'    '
+,'    '
+,'    void main() {'
+,'        float x = v_pos.x;'
+,'        float y = v_pos.y;'
+,'        vec4 ray_origin = vec4(u_mouse.x/2., u_mouse.y/2., fl, 1.);'
+,'        float base_dist_1 = calc_dist(ray_origin, sphere1, vec4(sphere1.x, sphere1.y, sphere1.z, 1.0));'
+,'        float base_dist_2 = calc_dist(ray_origin, sphere2, vec4(sphere2.x, sphere2.y, sphere2.z, 1.0));'
+,'    '
+,'    '
+,'    '
+,'        float dist_1 = calc_dist(ray_origin, sphere1, vec4(x, y, 0., 1.0));'
+,'        float dist_2 = calc_dist(ray_origin, sphere2, vec4(x, y, 0., 1.0));'
+,'        vec4 coloring;'
+,'    '
+,'    '
+,'        if (dist_1 < dist_2) {'
+,'            coloring = calc_coloring(dist_1, vec3(1.0, 0., 0.), base_dist_1, sphere1.w);'
+,'        }'
+,'        '
+,'        if (dist_1 > dist_2) {'
+,'            coloring = calc_coloring(dist_2, vec3(0., 1.0, 0.), base_dist_2, sphere2.w);'
+,'        }'
+,'        if (dist_1 == dist_2) {'
+,'            if (dist_1 == 10000.0) {'
+,'                coloring = background_color;'
+,'            }'
+,'            else { '   
+,'                coloring = calc_coloring(dist_2, vec3(0., 1.0, 0.), base_dist_2, sphere2.w);'
+,'            }'
+,'        }'
+,'        '
+,'        gl_FragColor = coloring;'
+,'    }'
+].join('\n\ ');
+  start_gl("canvas1", vertexShader, fragmentShader);
+}
+s1x_input.addEventListener('blur', function(e){changeS1x(e);}, false);
+s1y_input.addEventListener('blur', function(e){changeS1y(e);}, false);
+s2x_input.addEventListener('blur', function(e){changeS2x(e);}, false);
+s2y_input.addEventListener('blur', function(e){changeS2y(e);}, false);
+</script>
+</body>

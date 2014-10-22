@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>onscroll test</title>
+<script type="text/javascript">
+window.onscroll = scroll;
+
+function scroll () {
+ alert("scroll event detected! " + window.pageXOffset + " " + window.pageYOffset);
+ // note: you can use window.innerWidth and window.innerHeight to access the width and height of the viewing area
+}
+</script>
+</head>
+
+<body>
+<p>Resize the window</p>
+<p>to a very small size,</p>
+<p>and use the scrollbars</p>
+<p>to move around the page content</p>
+<p>in the window.</p>
+</body>
+</html>
